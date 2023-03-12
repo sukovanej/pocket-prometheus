@@ -11,6 +11,7 @@ use std::io::stdout;
 use std::process::exit;
 use std::time::{Duration, SystemTime};
 
+use clap::Parser;
 use crossterm::execute;
 use crossterm::terminal::enable_raw_mode;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -23,17 +24,31 @@ use crate::query::{query_measurements, MetricQuery};
 use crate::stdout::redraw_stdout;
 use crate::user_input::{manage_user_input, UserInput};
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Port
+    #[arg(short, long)]
+    port: u32,
+
+    /// Host
+    #[arg(short, long, default_value = "http://localhost")]
+    host: String,
+
+    /// Scrape period
+    #[arg(short, long, default_value_t = 2000)]
+    scrape_period: u64,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let host = "http://localhost";
-    let port = 3000;
-    let scrape_period = 2000;
+    let args = Args::parse();
 
     let (measurements_tx, measurements_rx) = tokio::sync::mpsc::channel::<Vec<Measurement>>(32);
     let (user_input_tx, user_input_rx) = tokio::sync::mpsc::channel::<UserInput>(32);
 
     manage_user_input(user_input_tx);
-    manage_measurements(host, port, scrape_period, measurements_tx);
+    manage_measurements(args.host, args.port, args.scrape_period, measurements_tx);
     controller(measurements_rx, user_input_rx).await;
 
     Ok(())
@@ -89,8 +104,8 @@ async fn controller(
 }
 
 fn manage_measurements(
-    host: &'static str,
-    port: i32,
+    host: String,
+    port: u32,
     scrape_period: u64,
     measurements_tx: Sender<Vec<Measurement>>,
 ) {
@@ -98,7 +113,7 @@ fn manage_measurements(
         let mut all_measurements: Vec<Measurement> = vec![];
 
         loop {
-            let metrics = collect_metrics(host, port).await.unwrap();
+            let metrics = collect_metrics(&host, port).await.unwrap();
             let measurement = parse_metrics(&metrics).unwrap();
             all_measurements.push(measurement);
             measurements_tx
