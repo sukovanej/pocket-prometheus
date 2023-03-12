@@ -31,11 +31,13 @@ impl Metric {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Measurement {
     pub timestamp_ns: u128,
-    pub metrics: Vec<Metric>
+    pub metrics: Vec<Metric>,
 }
 
 fn current_timestamp_ns() -> u128 {
-    let duration_since_epoch = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let duration_since_epoch = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
     duration_since_epoch.as_nanos()
 }
 
@@ -51,10 +53,9 @@ pub fn parse_metrics(metrics_str: &str) -> Result<Measurement, Error<&str>> {
         metrics.push(parsed_metric);
     }
 
-
-    let measurement = Measurement{
+    let measurement = Measurement {
         timestamp_ns: current_timestamp_ns(),
-        metrics
+        metrics,
     };
 
     return Ok(measurement);

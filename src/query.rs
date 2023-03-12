@@ -2,12 +2,25 @@ use std::collections::HashMap;
 
 use crate::parser::{Measurement, Metric};
 
+#[derive(Clone, Debug)]
 pub struct MetricQuery {
     pub name: String,
     pub labels: HashMap<String, String>,
 }
 
-pub fn query_measurements(query: &MetricQuery, measurements: &Vec<Measurement>) -> Vec<Measurement> {
+impl MetricQuery {
+    pub fn empty() -> MetricQuery {
+        MetricQuery {
+            name: "".into(),
+            labels: HashMap::new(),
+        }
+    }
+}
+
+pub fn query_measurements(
+    query: &MetricQuery,
+    measurements: &Vec<Measurement>,
+) -> Vec<Measurement> {
     measurements
         .iter()
         .map(|measurement| query_measurement(query, measurement))
@@ -30,7 +43,8 @@ pub fn query_measurement(query: &MetricQuery, measurement: &Measurement) -> Meas
 }
 
 fn is_metric_matching_query(query: &MetricQuery, metric: &Metric) -> bool {
-    return metric.name == query.name && is_metric_matching_labels(&query.labels, &metric.labels);
+    return metric.name.contains(&query.name)
+        && is_metric_matching_labels(&query.labels, &metric.labels);
 }
 
 fn is_metric_matching_labels(

@@ -4,21 +4,40 @@ mod graph_render;
 mod parser;
 mod plain_render;
 mod query;
+mod stdout;
+mod user_input;
 
-use crossterm::{cursor, execute, terminal, QueueableCommand};
-use plain_render::render_plain;
-use std::io::{stdout, Stdout, Write};
-use std::{
-    collections::HashMap,
-    sync::mpsc,
-    time::{Duration, SystemTime},
-};
+use std::io::stdout;
+use std::process::exit;
+use std::time::{Duration, SystemTime};
 
-use collector::collect_metrics;
-use parser::{parse_metrics, Measurement};
+use crossterm::execute;
+use crossterm::terminal::enable_raw_mode;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::sleep;
 
+use crate::collector::collect_metrics;
+use crate::parser::{parse_metrics, Measurement};
+use crate::plain_render::render_plain;
 use crate::query::{query_measurements, MetricQuery};
+use crate::stdout::redraw_stdout;
+use crate::user_input::{manage_user_input, UserInput};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let host = "http://localhost";
+    let port = 3000;
+    let scrape_period = 2000;
+
+    let (measurements_tx, measurements_rx) = tokio::sync::mpsc::channel::<Vec<Measurement>>(32);
+    let (user_input_tx, user_input_rx) = tokio::sync::mpsc::channel::<UserInput>(32);
+
+    manage_user_input(user_input_tx);
+    manage_measurements(host, port, scrape_period, measurements_tx);
+    controller(measurements_rx, user_input_rx).await;
+
+    Ok(())
+}
 
 fn current_timestamp_ns() -> u128 {
     let duration_since_epoch = SystemTime::now()
@@ -27,52 +46,66 @@ fn current_timestamp_ns() -> u128 {
     duration_since_epoch.as_nanos()
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let host = "http://localhost";
-    let port = 3000;
-    let scrape_period = 2000;
+async fn controller(
+    mut measurements_rx: Receiver<Vec<Measurement>>,
+    mut user_input_rx: Receiver<UserInput>,
+) {
+    enable_raw_mode().unwrap();
+
     let now_timestamp_ns = current_timestamp_ns();
-
     let mut stdout = stdout();
-    execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
+    execute!(stdout, crossterm::terminal::EnterAlternateScreen).unwrap();
 
-    let query = MetricQuery {
-        name: "nodejs_eventloop_lag_p99_seconds".to_string(),
-        labels: HashMap::new(),
-    };
+    let mut measurements = vec![];
+    let mut query = MetricQuery::empty();
 
-    let (measurement_channel_sender, measurement_channel_receiver) = mpsc::channel::<Measurement>();
+    loop {
+        let mut incomming_query = None;
+        let mut incomming_measurements = None;
 
-    tokio::spawn(async move {
-        loop {
-            let metrics = collect_metrics(host, port).await.unwrap();
-            let measurement = parse_metrics(&metrics).unwrap();
-            let _ = measurement_channel_sender.send(measurement);
-            sleep(Duration::from_millis(scrape_period)).await;
+        tokio::select! {
+            query = user_input_rx.recv() => incomming_query = query,
+            measurements = measurements_rx.recv() => incomming_measurements = measurements,
+        };
+
+        if let Some(incomming_query) = incomming_query {
+            match incomming_query {
+                UserInput::MetricQuery(incomming_query) => query = incomming_query,
+                UserInput::Exit => {
+                    execute!(stdout, crossterm::terminal::LeaveAlternateScreen).unwrap();
+                    exit(0);
+                }
+            }
         }
-    });
 
-    let mut measurements: Vec<Measurement> = vec![];
-
-    while let Ok(measurement) = measurement_channel_receiver.recv() {
-        measurements.push(measurement);
+        if let Some(incomming_measurements) = incomming_measurements {
+            measurements = incomming_measurements;
+        }
 
         let filtered_measurements = query_measurements(&query, &measurements);
         let data = render_plain(&filtered_measurements, now_timestamp_ns);
-        redraw_stdout(data, &mut stdout);
+        redraw_stdout(&query, data, &mut stdout);
     }
-
-    Ok(())
 }
 
-fn redraw_stdout(data: String, mut stdout: &Stdout) {
-    execute!(
-        stdout,
-        cursor::MoveTo(0, 0),
-        terminal::Clear(terminal::ClearType::All)
-    ).unwrap();
+fn manage_measurements(
+    host: &'static str,
+    port: i32,
+    scrape_period: u64,
+    measurements_tx: Sender<Vec<Measurement>>,
+) {
+    tokio::spawn(async move {
+        let mut all_measurements: Vec<Measurement> = vec![];
 
-    stdout.write_all(data.as_bytes()).unwrap();
-    stdout.flush().unwrap();
+        loop {
+            let metrics = collect_metrics(host, port).await.unwrap();
+            let measurement = parse_metrics(&metrics).unwrap();
+            all_measurements.push(measurement);
+            measurements_tx
+                .send(all_measurements.clone())
+                .await
+                .unwrap();
+            sleep(Duration::from_millis(scrape_period)).await;
+        }
+    });
 }
