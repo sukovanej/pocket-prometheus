@@ -11,18 +11,20 @@ cargo install --path .
 ## Usage
 
 ```bash
-$ pocket-prometheus --help
-Usage: pocket-prometheus [OPTIONS] --port <PORT>
+$ pocket-prometheus help
+Usage: pocket-prometheus <COMMAND>
+
+Commands:
+  run          
+  get-metrics  
+  help         Print this message or the help of the given subcommand(s)
 
 Options:
-  -p, --port <PORT>                    Port
-  -h, --host <HOST>                    Host [default: http://localhost]
-  -s, --scrape-period <SCRAPE_PERIOD>  Scrape period [default: 2000]
-  -h, --help                           Print help
-  -V, --version                        Print version
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
-Run `pocket-prometheus --port [PORT]`. This will start a TUI with metrics collector on the background. 
+Run `pocket-prometheus run --port [PORT]`. This will start a TUI with metrics collector on the background. 
 In the TUI, you can query metrics by their name.
 
 Press `escape` to exit the application.
@@ -37,7 +39,7 @@ $ pnpm install
 $ pnpm start
 ```
 
-In another terminal window, trigger `pocket-prometheus --port 3000` and try to type *lag_secong*.
+In another terminal window, trigger `pocket-prometheus run --port 3000` and try to type *lag_secong*.
 This will query for `nodejs_eventloop_lag_seconds` metric which is exposed from the nodejs 
 application.
 
@@ -68,3 +70,5 @@ after 102s:
  - nodejs_eventloop_lag_seconds: 0.004106667
 after 104s:
 ```
+
+Run `pocket-prometheus get-metrics --port 3000` to get a list of all metrics.

@@ -27,19 +27,15 @@ use crate::user_input::{manage_user_input, UserInput};
 #[derive(Debug, clap::Subcommand)]
 enum Action {
     Run(RunArgs),
-    GetMetrics(GetMetricsArgs),
+    GetMetrics(HostPortArgs),
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct RunArgs {
     /// Port
-    #[arg(short, long)]
-    port: u32,
-
-    /// Host
-    #[arg(short, long, default_value = "http://localhost")]
-    host: String,
+    #[command(flatten)]
+    host_port: HostPortArgs,
 
     /// Scrape period
     #[arg(short, long, default_value_t = 2000)]
@@ -48,7 +44,7 @@ struct RunArgs {
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct GetMetricsArgs {
+struct HostPortArgs {
     /// Port
     #[arg(short, long)]
     port: u32,
@@ -75,7 +71,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match args.action {
         Action::Run(args) => {
             manage_user_input(user_input_tx);
-            manage_measurements(args.host, args.port, args.scrape_period, measurements_tx);
+            manage_measurements(
+                args.host_port.host,
+                args.host_port.port,
+                args.scrape_period,
+                measurements_tx,
+            );
             controller(measurements_rx, user_input_rx).await;
         }
         Action::GetMetrics(args) => {
