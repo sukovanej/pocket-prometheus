@@ -1,6 +1,6 @@
 use crate::parser::Measurement;
 
-pub fn render_plain(measurements: &Vec<Measurement>, now_timestamp_ns: u128) -> String {
+pub fn render_plain(measurements: &[Measurement], now_timestamp_ns: u128) -> String {
     measurements
         .iter()
         .map(|measurement| format_measurement(measurement, now_timestamp_ns))

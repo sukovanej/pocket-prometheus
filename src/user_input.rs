@@ -25,7 +25,7 @@ pub fn manage_user_input(user_input_tx: Sender<UserInput>) {
             if let Event::Key(key) = event {
                 match key.code {
                     KeyCode::Char(char) => {
-                        query.name.push(char.clone());
+                        query.name.push(char);
                         user_input_tx
                             .send(UserInput::MetricQuery(query.clone()))
                             .await

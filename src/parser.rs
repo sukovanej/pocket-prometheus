@@ -44,8 +44,8 @@ fn current_timestamp_ns() -> u128 {
 pub fn parse_metrics(metrics_str: &str) -> Result<Measurement, Error<&str>> {
     let mut metrics = vec![];
 
-    for line in metrics_str.split("\n") {
-        if line.starts_with("#") || line == "" {
+    for line in metrics_str.split('\n') {
+        if line.starts_with('#') || line.is_empty() {
             continue;
         }
 
@@ -58,7 +58,7 @@ pub fn parse_metrics(metrics_str: &str) -> Result<Measurement, Error<&str>> {
         metrics,
     };
 
-    return Ok(measurement);
+    Ok(measurement)
 }
 
 // nom parser
@@ -70,8 +70,8 @@ fn parse_metric(metric: &str) -> IResult<&str, Metric> {
             let labels = labels
                 .first()
                 .map(|v| v.to_owned())
-                .unwrap_or_else(|| HashMap::new());
-            Metric::new(name, value, labels.to_owned())
+                .unwrap_or_else(HashMap::new);
+            Metric::new(name, value, labels)
         },
     )(metric)
 }

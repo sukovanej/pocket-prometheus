@@ -1,6 +1,5 @@
 mod collector;
 mod get_metrics;
-mod graph_render;
 mod parser;
 mod plain_render;
 mod query;
@@ -14,20 +13,26 @@ use std::time::{Duration, SystemTime};
 use clap::Parser;
 use crossterm::execute;
 use crossterm::terminal::enable_raw_mode;
+use get_metrics::get_metrics;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::sleep;
 
 use crate::collector::collect_metrics;
-use crate::graph_render::render_graph;
 use crate::parser::{parse_metrics, Measurement};
 use crate::plain_render::render_plain;
 use crate::query::{query_measurements, MetricQuery};
 use crate::stdout::redraw_stdout;
 use crate::user_input::{manage_user_input, UserInput};
 
+#[derive(Debug, clap::Subcommand)]
+enum Action {
+    Run(RunArgs),
+    GetMetrics(GetMetricsArgs),
+}
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+struct RunArgs {
     /// Port
     #[arg(short, long)]
     port: u32,
@@ -41,6 +46,25 @@ struct Args {
     scrape_period: u64,
 }
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct GetMetricsArgs {
+    /// Port
+    #[arg(short, long)]
+    port: u32,
+
+    /// Host
+    #[arg(short, long, default_value = "http://localhost")]
+    host: String,
+}
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[command(subcommand)]
+    action: Action,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
@@ -48,9 +72,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (measurements_tx, measurements_rx) = tokio::sync::mpsc::channel::<Vec<Measurement>>(32);
     let (user_input_tx, user_input_rx) = tokio::sync::mpsc::channel::<UserInput>(32);
 
-    manage_user_input(user_input_tx);
-    manage_measurements(args.host, args.port, args.scrape_period, measurements_tx);
-    controller(measurements_rx, user_input_rx).await;
+    match args.action {
+        Action::Run(args) => {
+            manage_user_input(user_input_tx);
+            manage_measurements(args.host, args.port, args.scrape_period, measurements_tx);
+            controller(measurements_rx, user_input_rx).await;
+        }
+        Action::GetMetrics(args) => {
+            let metrics = get_metrics(&args.host, args.port).await;
+            println!("{:#?}", metrics);
+        }
+    }
 
     Ok(())
 }
@@ -113,7 +145,7 @@ async fn controller(
 
         let filtered_measurements = query_measurements(&query, &measurements);
         let data = render_plain(&filtered_measurements, now_timestamp_ns);
-        redraw_stdout(&query, data, &mut stdout, scroll_offset as u32);
+        redraw_stdout(&query, data, &stdout, scroll_offset as u32);
     }
 }
 

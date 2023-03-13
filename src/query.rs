@@ -17,10 +17,7 @@ impl MetricQuery {
     }
 }
 
-pub fn query_measurements(
-    query: &MetricQuery,
-    measurements: &Vec<Measurement>,
-) -> Vec<Measurement> {
+pub fn query_measurements(query: &MetricQuery, measurements: &[Measurement]) -> Vec<Measurement> {
     measurements
         .iter()
         .map(|measurement| query_measurement(query, measurement))
@@ -28,23 +25,19 @@ pub fn query_measurements(
 }
 
 pub fn query_measurement(query: &MetricQuery, measurement: &Measurement) -> Measurement {
-    let mut metrics = vec![];
-
-    for metric in measurement.metrics.iter() {
-        if is_metric_matching_query(&query, metric) {
-            metrics.push(metric.to_owned());
-        }
-    }
-
-    return Measurement {
-        metrics,
+    Measurement {
+        metrics: measurement
+            .metrics
+            .iter()
+            .filter(|metric| is_metric_matching_query(query, metric))
+            .map(|metric| metric.to_owned())
+            .collect(),
         timestamp_ns: measurement.timestamp_ns,
-    };
+    }
 }
 
 fn is_metric_matching_query(query: &MetricQuery, metric: &Metric) -> bool {
-    return metric.name.contains(&query.name)
-        && is_metric_matching_labels(&query.labels, &metric.labels);
+    metric.name.contains(&query.name) && is_metric_matching_labels(&query.labels, &metric.labels)
 }
 
 fn is_metric_matching_labels(

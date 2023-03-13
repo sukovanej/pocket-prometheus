@@ -1,8 +1,10 @@
 use std::collections::HashSet;
 
-use crate::parser::Measurement;
+use crate::{collector::collect_metrics, parser::parse_metrics};
 
-pub fn get_metrics(measurement: &Measurement) -> Vec<String> {
+pub async fn get_metrics(host: &str, port: u32) -> Vec<String> {
+    let metrics = collect_metrics(host, port).await.unwrap();
+    let measurement = parse_metrics(&metrics).unwrap();
     let set = measurement
         .metrics
         .iter()
