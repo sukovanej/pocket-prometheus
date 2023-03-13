@@ -18,6 +18,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::sleep;
 
 use crate::collector::collect_metrics;
+use crate::graph_render::render_graph;
 use crate::parser::{parse_metrics, Measurement};
 use crate::plain_render::render_plain;
 use crate::query::{query_measurements, MetricQuery};
@@ -73,6 +74,7 @@ async fn controller(
 
     let mut measurements = vec![];
     let mut query = MetricQuery::empty();
+    let mut scroll_offset: i64 = 0;
 
     loop {
         let mut incomming_query = None;
@@ -90,6 +92,18 @@ async fn controller(
                     execute!(stdout, crossterm::terminal::LeaveAlternateScreen).unwrap();
                     exit(0);
                 }
+                UserInput::ScrollDown => {
+                    scroll_offset += 1;
+                }
+                UserInput::ScrollUp => {
+                    scroll_offset -= 1.min(scroll_offset);
+                }
+                UserInput::ScrollPageDown => {
+                    scroll_offset += 20;
+                }
+                UserInput::ScrollPageUp => {
+                    scroll_offset -= 20.min(scroll_offset);
+                }
             }
         }
 
@@ -99,7 +113,7 @@ async fn controller(
 
         let filtered_measurements = query_measurements(&query, &measurements);
         let data = render_plain(&filtered_measurements, now_timestamp_ns);
-        redraw_stdout(&query, data, &mut stdout);
+        redraw_stdout(&query, data, &mut stdout, scroll_offset as u32);
     }
 }
 

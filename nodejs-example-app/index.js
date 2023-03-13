@@ -1,11 +1,16 @@
 import { createServer } from "http";
-import { collectDefaultMetrics, register } from "prom-client";
+import { Counter, collectDefaultMetrics, register } from "prom-client";
 
 collectDefaultMetrics();
+
+const counter = new Counter({
+  name: 'patrik', help: 'patrik'
+});
 
 const server = createServer(async (req, res) => {
   if (req.url === "/metrics") {
     console.log("Handling /metrics");
+    counter.inc();
     res.write(await register.metrics());
     res.end();
   }

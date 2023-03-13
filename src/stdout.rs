@@ -37,7 +37,7 @@ impl StdoutManager {
     }
 }
 
-pub fn redraw_stdout(query: &MetricQuery, data: String, mut stdout: &Stdout) {
+pub fn redraw_stdout(query: &MetricQuery, data: String, mut stdout: &Stdout, scroll_offset: u32) {
     let (Width(width), Height(height)) = terminal_size().unwrap();
 
     let mut manager = StdoutManager::new();
@@ -57,14 +57,22 @@ pub fn redraw_stdout(query: &MetricQuery, data: String, mut stdout: &Stdout) {
     let box_bottom = format!("└{}┘", "─".repeat((width - 2).into()));
     manager.write_line(&box_bottom, &stdout);
 
-    let lines: Vec<&str> = data.split("\n").collect();
-    let last_lines = if lines.len() as u16 > height - 3 {
-        &lines[(lines.len() + 3 - height as usize)..(lines.len() - 1)]
-    } else {
-        &lines
-    };
+    manager.write_line(
+        &format!(
+            "  Help: <UP> / <DOWN> to move around, <ESC> to quit; Offset: {}",
+            scroll_offset
+        ),
+        stdout,
+    );
+    manager.write_line("", stdout);
 
-    for line in last_lines {
+    let lines: Vec<&str> = data
+        .split("\n")
+        .skip(scroll_offset as usize)
+        .take((height - 5) as usize)
+        .collect::<Vec<&str>>();
+
+    for line in lines {
         manager.write_line(&line, &stdout);
     }
 

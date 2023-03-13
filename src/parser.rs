@@ -76,7 +76,7 @@ fn parse_metric(metric: &str) -> IResult<&str, Metric> {
     )(metric)
 }
 
-static STRING_ALLOWED_CHARS: [char; 3] = ['_', '.', '+'];
+static STRING_ALLOWED_CHARS: [char; 4] = ['_', '.', '+', '-'];
 
 fn parse_str(i: &str) -> IResult<&str, &str> {
     take_while(|c: char| c.is_alphanumeric() || STRING_ALLOWED_CHARS.contains(&c))(i)

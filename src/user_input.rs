@@ -8,6 +8,10 @@ use crate::query::MetricQuery;
 pub enum UserInput {
     MetricQuery(MetricQuery),
     Exit,
+    ScrollUp,
+    ScrollDown,
+    ScrollPageUp,
+    ScrollPageDown,
 }
 
 pub fn manage_user_input(user_input_tx: Sender<UserInput>) {
@@ -29,6 +33,18 @@ pub fn manage_user_input(user_input_tx: Sender<UserInput>) {
                     }
                     KeyCode::Esc => {
                         user_input_tx.send(UserInput::Exit).await.unwrap();
+                    }
+                    KeyCode::Up => {
+                        user_input_tx.send(UserInput::ScrollUp).await.unwrap();
+                    }
+                    KeyCode::Down => {
+                        user_input_tx.send(UserInput::ScrollDown).await.unwrap();
+                    }
+                    KeyCode::PageUp => {
+                        user_input_tx.send(UserInput::ScrollPageUp).await.unwrap();
+                    }
+                    KeyCode::PageDown => {
+                        user_input_tx.send(UserInput::ScrollPageDown).await.unwrap();
                     }
                     KeyCode::Backspace => {
                         query.name.pop();
