@@ -23,7 +23,7 @@ Commands:
 
 Options:
   -h, --help     Print help
-  -V, --version  Print version```
+  -V, --version  Print version
 ```
 
 Run `pocket-prometheus run --port [PORT]`. This will start a TUI with metrics collector on the background. 
