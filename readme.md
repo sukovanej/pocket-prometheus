@@ -5,24 +5,25 @@ Simple TUI application for local debugging of prometheus application metrics.
 ## Install
 
 ```bash
-cargo install --path .
+cargo install pocket-prometheus
 ```
 
 ## Usage
 
 ```bash
 $ pocket-prometheus help
+Simple TUI for prometheus metrics scraping
+
 Usage: pocket-prometheus <COMMAND>
 
 Commands:
-  run          
-  get-metrics  
+  run          Simple TUI for prometheus metrics scraping
+  get-metrics  Simple TUI for prometheus metrics scraping
   help         Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
-  -V, --version  Print version
-```
+  -V, --version  Print version```
 
 Run `pocket-prometheus run --port [PORT]`. This will start a TUI with metrics collector on the background. 
 In the TUI, you can query metrics by their name.
@@ -34,7 +35,8 @@ Press `escape` to exit the application.
 Start the example application.
 
 ```bash
-$ cd nodejs-example-app/
+$ git clone https://github.com/sukovanej/pocket-prometheus/
+$ cd pocket-prometheus/nodejs-example-app/
 $ pnpm install
 $ pnpm start
 ```
@@ -44,31 +46,21 @@ This will query for `nodejs_eventloop_lag_seconds` metric which is exposed from 
 application.
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ Query: lag_second                                                                      │
-└────────────────────────────────────────────────────────────────────────────────────────┘
- - nodejs_eventloop_lag_seconds: 0.003553917
-after 84s:
- - nodejs_eventloop_lag_seconds: 0.004184417
-after 86s:
- - nodejs_eventloop_lag_seconds: 0.004241709
-after 88s:
- - nodejs_eventloop_lag_seconds: 0.002958708
-after 90s:
- - nodejs_eventloop_lag_seconds: 0.003733917
-after 92s:
- - nodejs_eventloop_lag_seconds: 0.0039005
-after 94s:
- - nodejs_eventloop_lag_seconds: 0.003489375
-after 96s:
- - nodejs_eventloop_lag_seconds: 0.002724208
-after 98s:
- - nodejs_eventloop_lag_seconds: 0.003667542
-after 100s:
- - nodejs_eventloop_lag_seconds: 0.003900584
-after 102s:
- - nodejs_eventloop_lag_seconds: 0.004106667
-after 104s:
+┌────────────────────────────────────────────────────────────────┐
+│ Query: lag_se                                                  │
+└────────────────────────────────────────────────────────────────┘
+  Help: <UP> / <DOWN> to move around, <ESC> to quit; Offset: 0
+
+after 0s:
+ - nodejs_eventloop_lag_seconds: 0
+after 2s:
+ - nodejs_eventloop_lag_seconds: 0.008147666
+after 4s:
+ - nodejs_eventloop_lag_seconds: 0.005280334
+after 6s:
+ - nodejs_eventloop_lag_seconds: 0.003070375
+after 8s:
+ - nodejs_eventloop_lag_seconds: 0.005113959
 ```
 
 Run `pocket-prometheus get-metrics --port 3000` to get a list of all metrics.
