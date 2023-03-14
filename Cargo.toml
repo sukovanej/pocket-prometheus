@@ -12,3 +12,4 @@ crossterm = { version = "0.26.1", features = ["event-stream"] }
 futures = "0.3.27"
 terminal_size = "0.2.5"
 clap = { version = "4.1.8", features = ["derive"] }
+anyhow = "1.0.69"

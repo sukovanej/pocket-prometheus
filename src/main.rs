@@ -10,6 +10,7 @@ use std::io::stdout;
 use std::process::exit;
 use std::time::{Duration, SystemTime};
 
+use anyhow::Error;
 use clap::Parser;
 use crossterm::execute;
 use crossterm::terminal::enable_raw_mode;
@@ -77,7 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 args.scrape_period,
                 measurements_tx,
             );
-            controller(measurements_rx, user_input_rx).await;
+            controller(measurements_rx, user_input_rx).await?;
         }
         Action::GetMetrics(args) => {
             let metrics = get_metrics(&args.host, args.port).await;
@@ -88,22 +89,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn current_timestamp_ns() -> u128 {
-    let duration_since_epoch = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
-    duration_since_epoch.as_nanos()
-}
-
 async fn controller(
     mut measurements_rx: Receiver<Vec<Measurement>>,
     mut user_input_rx: Receiver<UserInput>,
-) {
-    enable_raw_mode().unwrap();
+) -> Result<(), Error> {
+    enable_raw_mode()?;
 
-    let now_timestamp_ns = current_timestamp_ns();
+    let now_timestamp_ns = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)?
+        .as_nanos();
     let mut stdout = stdout();
-    execute!(stdout, crossterm::terminal::EnterAlternateScreen).unwrap();
+    execute!(stdout, crossterm::terminal::EnterAlternateScreen)?;
 
     let mut measurements = vec![];
     let mut query = MetricQuery::empty();
@@ -122,7 +118,7 @@ async fn controller(
             match incomming_query {
                 UserInput::MetricQuery(incomming_query) => query = incomming_query,
                 UserInput::Exit => {
-                    execute!(stdout, crossterm::terminal::LeaveAlternateScreen).unwrap();
+                    execute!(stdout, crossterm::terminal::LeaveAlternateScreen)?;
                     exit(0);
                 }
                 UserInput::ScrollDown => {
@@ -146,7 +142,7 @@ async fn controller(
 
         let filtered_measurements = query_measurements(&query, &measurements);
         let data = render_plain(&filtered_measurements, now_timestamp_ns);
-        redraw_stdout(&query, data, &stdout, scroll_offset as u32);
+        redraw_stdout(&query, data, &stdout, scroll_offset as u32)?;
     }
 }
 
@@ -160,14 +156,13 @@ fn manage_measurements(
         let mut all_measurements: Vec<Measurement> = vec![];
 
         loop {
-            let metrics = collect_metrics(&host, port).await.unwrap();
-            let measurement = parse_metrics(&metrics).unwrap();
+            let metrics = collect_metrics(&host, port).await?;
+            let measurement = parse_metrics(&metrics)?;
             all_measurements.push(measurement);
-            measurements_tx
-                .send(all_measurements.clone())
-                .await
-                .unwrap();
+            measurements_tx.send(all_measurements.clone()).await?;
             sleep(Duration::from_millis(scrape_period)).await;
         }
+
+        Ok::<(), Error>(())
     });
 }

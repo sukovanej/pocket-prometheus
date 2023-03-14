@@ -1,3 +1,4 @@
+use anyhow::{Context, Error};
 use crossterm::event::{Event, EventStream, KeyCode};
 use futures::StreamExt;
 use tokio::sync::mpsc::Sender;
@@ -20,7 +21,7 @@ pub fn manage_user_input(user_input_tx: Sender<UserInput>) {
         let mut reader = EventStream::new();
 
         loop {
-            let event = reader.next().await.unwrap().unwrap();
+            let event = reader.next().await.context("")??;
 
             if let Event::Key(key) = event {
                 match key.code {
@@ -28,34 +29,35 @@ pub fn manage_user_input(user_input_tx: Sender<UserInput>) {
                         query.name.push(char);
                         user_input_tx
                             .send(UserInput::MetricQuery(query.clone()))
-                            .await
-                            .unwrap();
+                            .await?;
                     }
                     KeyCode::Esc => {
-                        user_input_tx.send(UserInput::Exit).await.unwrap();
+                        user_input_tx.send(UserInput::Exit).await?;
+                        break;
                     }
                     KeyCode::Up => {
-                        user_input_tx.send(UserInput::ScrollUp).await.unwrap();
+                        user_input_tx.send(UserInput::ScrollUp).await?;
                     }
                     KeyCode::Down => {
-                        user_input_tx.send(UserInput::ScrollDown).await.unwrap();
+                        user_input_tx.send(UserInput::ScrollDown).await?;
                     }
                     KeyCode::PageUp => {
-                        user_input_tx.send(UserInput::ScrollPageUp).await.unwrap();
+                        user_input_tx.send(UserInput::ScrollPageUp).await?;
                     }
                     KeyCode::PageDown => {
-                        user_input_tx.send(UserInput::ScrollPageDown).await.unwrap();
+                        user_input_tx.send(UserInput::ScrollPageDown).await?;
                     }
                     KeyCode::Backspace => {
                         query.name.pop();
                         user_input_tx
                             .send(UserInput::MetricQuery(query.clone()))
-                            .await
-                            .unwrap();
+                            .await?;
                     }
                     _ => {}
                 }
             }
         }
+
+        Ok::<(), Error>(())
     });
 }

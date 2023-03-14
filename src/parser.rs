@@ -1,10 +1,14 @@
-use std::{collections::HashMap, time::SystemTime};
+use std::{
+    collections::HashMap,
+    time::{SystemTime, SystemTimeError},
+};
 
+use anyhow::Error;
 use nom::{
     bytes::complete::take_while,
     character::complete::char,
     combinator::{cut, map},
-    error::{context, Error},
+    error::context,
     multi::{many_m_n, separated_list0},
     number::complete::double,
     sequence::{preceded, separated_pair, terminated, tuple},
@@ -34,27 +38,21 @@ pub struct Measurement {
     pub metrics: Vec<Metric>,
 }
 
-fn current_timestamp_ns() -> u128 {
-    let duration_since_epoch = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
-    duration_since_epoch.as_nanos()
+fn current_timestamp_ns() -> Result<u128, SystemTimeError> {
+    Ok(SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)?
+        .as_nanos())
 }
 
-pub fn parse_metrics(metrics_str: &str) -> Result<Measurement, Error<&str>> {
-    let mut metrics = vec![];
-
-    for line in metrics_str.split('\n') {
-        if line.starts_with('#') || line.is_empty() {
-            continue;
-        }
-
-        let (_, parsed_metric) = parse_metric(line).finish()?;
-        metrics.push(parsed_metric);
-    }
+pub fn parse_metrics(metrics_str: &str) -> Result<Measurement, Error> {
+    let metrics: Vec<Metric> = metrics_str
+        .split('\n')
+        .filter(|line| !line.starts_with('#') && !line.is_empty())
+        .map(|line| parse_metric(line).finish().map(|i| i.1).unwrap()) // TODO: remove unwrap
+        .collect();
 
     let measurement = Measurement {
-        timestamp_ns: current_timestamp_ns(),
+        timestamp_ns: current_timestamp_ns()?,
         metrics,
     };
 
