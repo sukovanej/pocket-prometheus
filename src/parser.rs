@@ -79,7 +79,7 @@ fn parse_metric(metric: &str) -> IResult<&str, Metric> {
     )(metric)
 }
 
-static STRING_ALLOWED_CHARS: [char; 4] = ['_', '.', '+', '-'];
+static STRING_ALLOWED_CHARS: [char; 5] = ['_', '.', '+', '-', '/'];
 
 fn parse_str(i: &str) -> IResult<&str, &str> {
     take_while(|c: char| c.is_alphanumeric() || STRING_ALLOWED_CHARS.contains(&c))(i)
@@ -119,7 +119,7 @@ mod tests {
     use anyhow::Error;
     use nom::Finish;
 
-    use std::collections::HashMap;
+    use std::{collections::HashMap, fs, path::PathBuf};
 
     use crate::parser::{parse_metric, parse_metrics, Metric};
 
@@ -165,6 +165,21 @@ mod tests {
                 ])
             )
         );
+
+        let python_example_metrics =
+            fs::read_to_string(PathBuf::from("tests/example_python_metrics.txt"))?;
+        let input4 = parse_metrics(&python_example_metrics)?;
+
+        assert!(input4.metrics.contains(&Metric::new(
+            "fastapi_requests_duration_seconds_bucket",
+            3.0,
+            HashMap::from([
+                ("app_name".into(), "python_app".into()),
+                ("le".into(), "+Inf".into()),
+                ("method".into(), "GET".into()),
+                ("path".into(), "/metrics".into())
+            ])
+        )));
 
         Ok(())
     }

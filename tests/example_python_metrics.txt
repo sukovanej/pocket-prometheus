@@ -1,0 +1,54 @@
+# HELP python_gc_objects_collected Objects collected during gc
+# TYPE python_gc_objects_collected counter
+python_gc_objects_collected_total{generation="0"} 1746.0
+python_gc_objects_collected_total{generation="1"} 648.0
+python_gc_objects_collected_total{generation="2"} 6.0
+# HELP python_gc_objects_uncollectable Uncollectable object found during GC
+# TYPE python_gc_objects_uncollectable counter
+python_gc_objects_uncollectable_total{generation="0"} 0.0
+python_gc_objects_uncollectable_total{generation="1"} 0.0
+python_gc_objects_uncollectable_total{generation="2"} 0.0
+# HELP python_gc_collections Number of times this generation was collected
+# TYPE python_gc_collections counter
+python_gc_collections_total{generation="0"} 204.0
+python_gc_collections_total{generation="1"} 18.0
+python_gc_collections_total{generation="2"} 1.0
+# HELP python_info Python platform information
+# TYPE python_info gauge
+python_info{implementation="CPython",major="3",minor="11",patchlevel="2",version="3.11.2"} 1.0
+# HELP fastapi_app_info FastAPI application information.
+# TYPE fastapi_app_info gauge
+fastapi_app_info{app_name="python_app"} 1.0
+# HELP fastapi_requests Total count of requests by method and path.
+# TYPE fastapi_requests counter
+fastapi_requests_total{app_name="python_app",method="GET",path="/metrics"} 4.0
+fastapi_requests_created{app_name="python_app",method="GET",path="/metrics"} 1.678814903615072e+09
+# HELP fastapi_responses Total count of responses by method, path and status codes.
+# TYPE fastapi_responses counter
+fastapi_responses_total{app_name="python_app",method="GET",path="/metrics",status_code="200"} 3.0
+fastapi_responses_created{app_name="python_app",method="GET",path="/metrics",status_code="200"} 1.6788149036157691e+09
+# HELP fastapi_requests_duration_seconds Histogram of requests processing time by path (in seconds)
+# TYPE fastapi_requests_duration_seconds histogram
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.005",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.01",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.025",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.05",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.075",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.1",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.25",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.5",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="0.75",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="1.0",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="2.5",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="5.0",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="7.5",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="10.0",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_bucket{app_name="python_app",le="+Inf",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_count{app_name="python_app",method="GET",path="/metrics"} 3.0
+fastapi_requests_duration_seconds_sum{app_name="python_app",method="GET",path="/metrics"} 0.001629207981750369
+fastapi_requests_duration_seconds_created{app_name="python_app",method="GET",path="/metrics"} 1.678814903615741e+09
+# HELP fastapi_exceptions Total count of exceptions raised by path and exception type
+# TYPE fastapi_exceptions counter
+# HELP fastapi_requests_in_progress Gauge of requests by method and path currently being processed
+# TYPE fastapi_requests_in_progress gauge
+fastapi_requests_in_progress{app_name="python_app",method="GET",path="/metrics"} 1.0
