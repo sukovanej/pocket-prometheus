@@ -161,8 +161,11 @@ fn manage_measurements(
             all_measurements.push(measurement);
             measurements_tx.send(all_measurements.clone()).await?;
             sleep(Duration::from_millis(scrape_period)).await;
-        }
 
-        Ok::<(), Error>(())
+            if false {
+                // handle app exit
+                return Ok::<(), Error>(());
+            }
+        }
     });
 }

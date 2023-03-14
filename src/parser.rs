@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, SystemTimeError},
 };
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use nom::{
     bytes::complete::take_while,
     character::complete::char,
@@ -45,15 +45,20 @@ fn current_timestamp_ns() -> Result<u128, SystemTimeError> {
 }
 
 pub fn parse_metrics(metrics_str: &str) -> Result<Measurement, Error> {
-    let metrics: Vec<Metric> = metrics_str
+    let metrics: Result<Vec<Metric>, Error> = metrics_str
         .split('\n')
         .filter(|line| !line.starts_with('#') && !line.is_empty())
-        .map(|line| parse_metric(line).finish().map(|i| i.1).unwrap()) // TODO: remove unwrap
+        .map(|line| {
+            parse_metric(line)
+                .finish()
+                .map(|i| i.1)
+                .map_err(|e| anyhow!("Parser error: {}", e.to_string()))
+        })
         .collect();
 
     let measurement = Measurement {
         timestamp_ns: current_timestamp_ns()?,
-        metrics,
+        metrics: metrics?,
     };
 
     Ok(measurement)
@@ -111,15 +116,16 @@ fn hash(i: &str) -> IResult<&str, HashMap<String, String>> {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Error;
+    use nom::Finish;
+
     use std::collections::HashMap;
 
-    use nom::{error::Error, Finish};
-
-    use crate::parser::{parse_metric, Metric};
+    use crate::parser::{parse_metric, parse_metrics, Metric};
 
     #[test]
-    fn test_parse_metric() -> Result<(), Error<&'static str>> {
-        let (_, input1) = parse_metric("_cpu_user_seconds_total 5.784335").finish()?;
+    fn test_parse_metric() -> Result<(), Error> {
+        let input1 = parse_metrics("_cpu_user_seconds_total 5.784335")?;
         let (_, input2) =
             parse_metric("nodejs_heap_space_size_available_bytes{space=\"read_only\"} 0")
                 .finish()?;
@@ -129,8 +135,12 @@ mod tests {
         .finish()?;
 
         assert_eq!(
-            input1,
-            Metric::new("_cpu_user_seconds_total", 5.784335, HashMap::new())
+            input1.metrics,
+            vec![Metric::new(
+                "_cpu_user_seconds_total",
+                5.784335,
+                HashMap::new()
+            )]
         );
 
         assert_eq!(
