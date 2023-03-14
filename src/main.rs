@@ -66,19 +66,25 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    let (measurements_tx, measurements_rx) = tokio::sync::mpsc::channel::<Vec<Measurement>>(32);
+    let (measurements_tx, measurements_rx) = tokio::sync::mpsc::channel::<MeasurementUpdate>(32);
     let (user_input_tx, user_input_rx) = tokio::sync::mpsc::channel::<UserInput>(32);
 
     match args.action {
         Action::Run(args) => {
             manage_user_input(user_input_tx);
             manage_measurements(
-                args.host_port.host,
+                args.host_port.host.to_owned(),
                 args.host_port.port,
                 args.scrape_period,
                 measurements_tx,
             );
-            controller(measurements_rx, user_input_rx).await?;
+            controller(
+                args.host_port.host,
+                args.host_port.port,
+                measurements_rx,
+                user_input_rx,
+            )
+            .await?;
         }
         Action::GetMetrics(args) => {
             let metrics = get_metrics(&args.host, args.port).await;
@@ -90,7 +96,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn controller(
-    mut measurements_rx: Receiver<Vec<Measurement>>,
+    host: String,
+    port: u32,
+    mut measurements_rx: Receiver<MeasurementUpdate>,
     mut user_input_rx: Receiver<UserInput>,
 ) -> Result<(), Error> {
     enable_raw_mode()?;
@@ -104,14 +112,15 @@ async fn controller(
     let mut measurements = vec![];
     let mut query = MetricQuery::empty();
     let mut scroll_offset: i64 = 0;
+    let mut collection_success = true;
 
     loop {
         let mut incomming_query = None;
-        let mut incomming_measurements = None;
+        let mut incomming_measurement_update = None;
 
         tokio::select! {
             query = user_input_rx.recv() => incomming_query = query,
-            measurements = measurements_rx.recv() => incomming_measurements = measurements,
+            measurement_update = measurements_rx.recv() => incomming_measurement_update = measurement_update,
         };
 
         if let Some(incomming_query) = incomming_query {
@@ -136,30 +145,61 @@ async fn controller(
             }
         }
 
-        if let Some(incomming_measurements) = incomming_measurements {
-            measurements = incomming_measurements;
+        if let Some(incomming_measurement_update) = incomming_measurement_update {
+            match incomming_measurement_update {
+                MeasurementUpdate::Success(incomming_measurements) => {
+                    measurements = incomming_measurements;
+                    collection_success = true;
+                }
+                MeasurementUpdate::CollectError => collection_success = false,
+            }
         }
 
         let filtered_measurements = query_measurements(&query, &measurements);
-        let data = render_plain(&filtered_measurements, now_timestamp_ns);
+
+        let data = if collection_success {
+            render_plain(&filtered_measurements, now_timestamp_ns)
+        } else {
+            format!(
+                "Collection failed, {}:{}/metrics is not unavailable",
+                host, port
+            )
+        };
+
         redraw_stdout(&query, data, &stdout, scroll_offset as u32)?;
     }
+}
+
+#[derive(Debug)]
+enum MeasurementUpdate {
+    CollectError,
+    Success(Vec<Measurement>),
 }
 
 fn manage_measurements(
     host: String,
     port: u32,
     scrape_period: u64,
-    measurements_tx: Sender<Vec<Measurement>>,
+    measurements_tx: Sender<MeasurementUpdate>,
 ) {
     tokio::spawn(async move {
         let mut all_measurements: Vec<Measurement> = vec![];
 
         loop {
-            let metrics = collect_metrics(&host, port).await?;
-            let measurement = parse_metrics(&metrics)?;
-            all_measurements.push(measurement);
-            measurements_tx.send(all_measurements.clone()).await?;
+            match collect_metrics(&host, port).await {
+                Ok(metrics) => {
+                    let measurement = parse_metrics(&metrics)?;
+                    all_measurements.push(measurement);
+                    measurements_tx
+                        .send(MeasurementUpdate::Success(all_measurements.clone()))
+                        .await?;
+                }
+                Err(_) => {
+                    measurements_tx
+                        .send(MeasurementUpdate::CollectError)
+                        .await?;
+                }
+            }
             sleep(Duration::from_millis(scrape_period)).await;
 
             if false {
