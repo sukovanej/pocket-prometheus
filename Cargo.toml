@@ -2,6 +2,11 @@
 name = "pocket-prometheus"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "Simple TUI for prometheus metrics scraping"
+homepage = "https://github.com/sukovanej/pocket-prometheus/"
+repository = "https://github.com/sukovanej/pocket-prometheus/"
+readme = "readme.md"
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] }
