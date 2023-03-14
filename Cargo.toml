@@ -7,6 +7,7 @@ description = "Simple TUI for prometheus metrics scraping"
 homepage = "https://github.com/sukovanej/pocket-prometheus/"
 repository = "https://github.com/sukovanej/pocket-prometheus/"
 readme = "readme.md"
+categories = ["command-line-utilities"]
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] }
