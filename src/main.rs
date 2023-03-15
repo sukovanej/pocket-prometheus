@@ -32,7 +32,7 @@ enum Action {
 }
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(about="Run interactive TUI")]
 struct RunArgs {
     /// Port
     #[command(flatten)]
@@ -44,7 +44,7 @@ struct RunArgs {
 }
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(about="List all available metric names")]
 struct HostPortArgs {
     /// Port
     #[arg(short, long)]
