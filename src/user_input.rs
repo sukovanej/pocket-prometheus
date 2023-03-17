@@ -17,7 +17,7 @@ pub enum UserInput {
 
 pub fn manage_user_input(user_input_tx: Sender<UserInput>) {
     tokio::spawn(async move {
-        let mut query = MetricQuery::empty();
+        let mut query = MetricQuery::default();
         let mut reader = EventStream::new();
 
         loop {

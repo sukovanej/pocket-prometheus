@@ -32,7 +32,7 @@ enum Action {
 }
 
 #[derive(Parser, Debug)]
-#[command(about="Run interactive TUI")]
+#[command(about = "Run interactive TUI")]
 struct RunArgs {
     /// Port
     #[command(flatten)]
@@ -44,7 +44,7 @@ struct RunArgs {
 }
 
 #[derive(Parser, Debug)]
-#[command(about="List all available metric names")]
+#[command(about = "List all available metric names")]
 struct HostPortArgs {
     /// Port
     #[arg(short, long)]
@@ -110,7 +110,7 @@ async fn controller(
     execute!(stdout, crossterm::terminal::EnterAlternateScreen)?;
 
     let mut measurements = vec![];
-    let mut query = MetricQuery::empty();
+    let mut query = MetricQuery::default();
     let mut scroll_offset: i64 = 0;
     let mut collection_success = true;
 

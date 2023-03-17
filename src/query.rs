@@ -2,19 +2,10 @@ use std::collections::HashMap;
 
 use crate::parser::{Measurement, Metric};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MetricQuery {
     pub name: String,
     pub labels: HashMap<String, String>,
-}
-
-impl MetricQuery {
-    pub fn empty() -> MetricQuery {
-        MetricQuery {
-            name: "".into(),
-            labels: HashMap::new(),
-        }
-    }
 }
 
 pub fn query_measurements(query: &MetricQuery, measurements: &[Measurement]) -> Vec<Measurement> {
