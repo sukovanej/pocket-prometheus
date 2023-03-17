@@ -17,8 +17,8 @@ Simple TUI for prometheus metrics scraping
 Usage: pocket-prometheus <COMMAND>
 
 Commands:
-  run          Simple TUI for prometheus metrics scraping
-  get-metrics  Simple TUI for prometheus metrics scraping
+  run          Run interactive TUI
+  get-metrics  List all available metric names
   help         Print this message or the help of the given subcommand(s)
 
 Options:
@@ -42,7 +42,7 @@ $ pnpm install
 $ pnpm start
 ```
 
-In another terminal window, trigger `pocket-prometheus run --port 3000` and try to type *lag_secong*.
+In another terminal window, trigger `pocket-prometheus run --port 3000` and try to type "*lag_se*".
 This will query for `nodejs_eventloop_lag_seconds` metric which is exposed from the nodejs 
 application.
 
